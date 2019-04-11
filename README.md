@@ -1,0 +1,1 @@
+# Pseudanthias_squamipinnis_genome_assembly
