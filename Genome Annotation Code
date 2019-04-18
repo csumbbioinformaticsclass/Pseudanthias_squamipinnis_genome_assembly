@@ -1,1 +1,25 @@
-hello
+
+#trim reads
+java -jar /opt/Trimmomatic-0.36/trimmomatic-0.36.jar PE /data/serranidae/Pseudanthias_squamipinnis/RNA-seq/CAS-1_R1_001.fastq /data/serranidae/Pseudanthias_squamipinnis/RNA-seq/CAS-1_R2_001.fastq CAS-1_R1_trimmed_paired.fastq.gz CAS-1_R1_trimmed_unpaired.fastq.gz CAS-1_R2_trimmed_paired.fastq.gz CAS-1_R2_trimmed_unpaired.fastq.gz ILLUMINACLIP:/opt/Trimmomatic-0.36/adapters/TruSeq3-PE.fa:2:30:10 LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36
+
+#normalize reads to reduce amount of copies and have a faster run
+/opt/trinityrnaseq_old_v2/util/insilico_read_normalization.pl --seqType fq --JM 50G --max_cov 100 --CPU 8 __SS_lib_type FR --left left.fq --right right.fq --pairs_together --PARALLEL_STATS 
+
+#to start, we need to build a database with our genome in itthat RepeatModeler can reference
+BuildDatabase -name PS_DB -engine ncbi /data/serranidae/Pseudanthias_squamipinnis/Pseudanthias_squamipnnis_genome.v1.fasta 
+
+#RepeatMasker used to reduce known repeats and create a faster run
+/usr/local/bin/RepeatMasker -pa 20 -species danio -gff -dir /projects/classes/bioinformatics/Spring2019/annotation/RepeatMasker_danio /data/serranidae/Pseudanthias_squamipinnis/Pseudanthias_squamipnnis_genome.v1.fasta
+
+#to run RepeatModeler, -pa 8 is just  
+RepeatModeler -engine ncbi -pa 8 -database /data/serranidae/Pseudanthias_squamipinnis/Pseudanthias_squamipnnis_genome.v1.fasta
+
+#create a map in a bam file to use for trinity as a reference
+/opt/STAR/source/STAR --runThreadN 12 --runMode alignReads --outSAMtype BAM SortedByCoordinate --genomeDir /data/references/STAR/pseudanthias_squamipinnis_v1.0/ --readFilesIn CAS-1_R1_trimmed_paired.fastq.gz.normalized_K25_maxC100_minC0_maxCV10000.fq CAS-1_R2_trimmed_paired.fastq.gz.normalized_K25_maxC100_minC0_maxCV10000.fq 
+
+#Check if Bam worked
+samtools view Aligned.sortedByCoord.out.bam | less
+
+#assembled reads with Trinity
+/opt/trinityrnaseq_old_v2/Trinity --genome_guided_bam Aligned.sortedByCoord.out.bam --seqType fq --max_memory 100G --left CAS-1_R1_trimmed_paired.fastq.gz.normalized_K25_maxC100_minC0_maxCV10000.fq --right CAS-1_R2_trimmed_paired.fastq.gz.normalized_K25_maxC100_minC0_maxCV10000.fq --genome_guided_max_intron 10000 --CPU 20 --no_normalize_reads --SS_lib_type FR 
+
