@@ -1,1 +1,9 @@
+#how to download fish genomes
+wget <ncbi link>
 
+#how to change permissions when making directory
+mkdir -m 755 <folder name>
+#how to change permissions to existing directory
+chmod -R 755 <folder name>
+
+#this is paul bump 
